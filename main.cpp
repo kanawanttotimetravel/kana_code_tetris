@@ -1,6 +1,6 @@
 /*
     Project: Tetris
-    Author: Kanasapchet
+    Author: Kanaluvu
     Tasks done:
     * "Gameplay"
     - Define gamespace, tetromino, gravity
@@ -21,7 +21,7 @@
     - Render score
     - Render grid
     - Render hold section
-    - Render pause and countdown 
+    - Render pause and countdown
     - Render game over (demo)
 
     * "Audio"
@@ -30,7 +30,6 @@
 
     To-do:
     - Complete "Graphics"
-    - Factorize by function*
     - Factorize by file*
 
 */
@@ -40,185 +39,7 @@
 #include <time.h>
 #include <bits/stdc++.h>
 
-typedef std::vector<std::vector<int>> board;
-const int ROWS = 20;
-const int COLUMN = 10;
-double DEFAULT_DELAY = 1;
-
-struct point // represent spacial position
-{
-    int x, y;
-    point()
-    {
-        x = 0, y = 0;
-    }
-    point(int _x, int _y)
-    {
-        x = _x, y = _y;
-    }
-};
-
-struct Tetromino // a Tetromino consisted of 4 blocks, so we need 4 points
-{
-    point block[4];
-    int color;
-    Tetromino()
-    {
-        color = 0;
-    }
-};
-
-Tetromino getTetromino(const int &x) // Create a Tetromino
-{
-    /*
-        We need 8 points to be able to represent all type of tetrominos
-        0 2 4 6
-        1 3 5 7
-    */
-    int basis[7][4] = // 7 types of basic Tetrominos
-        {
-            1, 3, 5, 7, // I
-            4, 5, 6, 7, // O
-            2, 4, 5, 7, // S
-            3, 5, 4, 6, // Z
-            2, 6, 4, 7, // L
-            3, 7, 5, 6, // J
-            2, 4, 5, 6  // T
-        };
-    Tetromino t;
-    for (int i = 0; i < 4; i++)
-    {
-        t.block[i].x = basis[x][i] / 2 + 2;
-        t.block[i].y = basis[x][i] % 2;
-    }
-    t.color = x;
-    return t;
-}
-
-// check if the point is available
-bool isValidPoint(const point &p, const board &b)
-{
-    if (p.x < 0 || p.x >= COLUMN || p.y < 0 || p.y >= ROWS)
-        return 0;
-    if (b[p.y][p.x])
-        return 0;
-    return 1;
-}
-
-// check whether the tetromino's potision is valid or not
-bool isValidPotision(const Tetromino &t, const board &b)
-{
-    for (int i = 0; i < 4; i++)
-    {
-        if (!isValidPoint(t.block[i], b))
-            return 0;
-    }
-    return 1;
-}
-
-// check if the game has ended
-bool isEnd(const board &b)
-{
-    for (int i = 0; i < COLUMN; i++)
-    {
-        if (b[0][i])
-            return 1;
-    }
-    return 0;
-}
-
-// check whether a line is full or not
-bool checkLines(board &b, const int &row)
-{
-    for (int i = 0; i < COLUMN; i++)
-    {
-        if (!b[row][i])
-            return 0;
-    }
-    return 1;
-}
-
-// If a line is full, that line will be erased, and others line will fall down
-int clearLines(board &b)
-{
-    std::vector<int> empty(COLUMN, 0);
-    board newBoard(ROWS, std::vector<int>(COLUMN, 0));
-    int newRow = ROWS - 1;
-    int rowCleared = 0;
-    for (int i = ROWS - 1; i >= 0; i--)
-    {
-        if (!checkLines(b, i))
-            newBoard[newRow--] = b[i];
-        else
-            rowCleared++;
-    }
-    b = newBoard;
-    return rowCleared;
-}
-
-// Just to random
-int myrandom(int i)
-{
-    return std::rand() % i;
-}
-
-// convert integer into string
-std::string intToString(int x)
-{
-    std::string s = "";
-    while (x > 0)
-    {
-        s = char(x % 10 + '0') + s;
-        x /= 10;
-    }
-    return s;
-}
-
-std::string intToStringFilled(int x)
-{
-    std::string s = intToString(x);
-    while (s.size() < 6)
-    {
-        s = "0" + s;
-    }
-    return s;
-}
-
-// get score from clearing
-int getScore(const int &x, int level)
-{
-    int line[5] = {0, 100, 300, 500, 600};
-    return line[x];
-}
-
-// exponent
-double powd(double x, int y)
-{
-    if (y == 0)
-        return 1;
-    if (y == 1)
-        return x;
-    double t = powd(x, y / 2);
-    return t * t * powd(x, y % 2);
-}
-
-sf::Text TextSetup(const sf::Font &font, const int &size, const sf::Color &color, const std::string &string)
-{
-    sf::Text t;
-    t.setFont(font);
-    t.setCharacterSize(size);
-    t.setFillColor(color);
-    t.setString(string);
-    return t;
-}
-
-bool isInside(const point &pos, const point &upperLeft, const point &lowerRight)
-{
-    return ((pos.x >= upperLeft.x) &&
-            (pos.x <= lowerRight.x) &&
-            (pos.y >= upperLeft.y) &&
-            (pos.y <= lowerRight.y));
-}
+#include "operation.h"
 
 // main
 int main()
@@ -228,21 +49,18 @@ int main()
     // Graphics setup
     sf::RenderWindow window(sf::VideoMode(550, 600), "Kurisu"); // Create a window
 
-    sf::Texture texture, backgroundTextures, pauseScreenTextures, helpScreenTextures;
+    sf::Texture texture, backgroundTextures, pauseScreenTextures, helpScreenTextures, endScreenTextures;
     texture.loadFromFile("textures/Tetromino.png"); // Get the texture ready
     backgroundTextures.loadFromFile("textures/Background.jpg");
-    pauseScreenTextures.loadFromFile("textures/Pause.jpg");
-    helpScreenTextures.loadFromFile("textures/Help.jpg");
+    pauseScreenTextures.loadFromFile("textures/Pause.png");
+    helpScreenTextures.loadFromFile("textures/Help.png");
+    endScreenTextures.loadFromFile("textures/GameOver.png");
 
     const int BLOCK_SIZE = 25;
-    sf::Sprite sprite, background, pauseScreen, helpScreen;
+    sf::Sprite sprite, background;
     sprite.setTexture(texture);
 
     background.setTexture(backgroundTextures);
-
-    pauseScreen.setTexture(pauseScreenTextures);
-
-    helpScreen.setTexture(helpScreenTextures);
 
     // Audio setup
     // SFX
@@ -266,6 +84,7 @@ int main()
     }
     music.setLoop(1);
 
+    bool isBGM = 1, isSFX = 1;
     // tetra: the current tetromino potision
     // prev: the previous potision, served as a backup whenever the current potision is invalid
     Tetromino tetra, prev;
@@ -397,14 +216,11 @@ int main()
                 isPlaying = 0;
                 break;
             }
-            case sf::Event::GainedFocus:
-            {
-                isPlaying = 1;
-                break;
-            }
+
             // mouse action
             case sf::Event::MouseButtonPressed:
             {
+                // get mouse potision
                 sf::Vector2i p = sf::Mouse::getPosition(window);
                 point mousePotision(p.x, p.y);
                 if (!isPlaying)
@@ -413,6 +229,23 @@ int main()
                     {
                         if (isInside(mousePotision, point(171, 217), point(373, 273)))
                         {
+                            // if this is the game over screen, do some reset
+                            if (isEnd(boardStates))
+                            {
+                                // board reset
+                                boardStates = board(ROWS, std::vector<int>(COLUMN, 0));
+
+                                // states reset
+                                hold = 0, isHeld = 0, heldTetromino = -1;
+                                gameStarted = 0;
+
+                                // score, lines, level reset
+                                score = 0, level = 1, line = 0;
+
+                                // music reset
+                                music.stop();
+                            }
+                            // otherwise, just keep playing
                             isPlaying = 1;
                         }
 
@@ -426,9 +259,9 @@ int main()
                             window.close();
                         }
                     }
-                    else 
+                    else
                     {
-                        if (isInside(mousePotision, point(475, 111), point(525, 161)))
+                        if (isInside(mousePotision, point(441, 134), point(491, 184)))
                         {
                             isHelp = 0;
                         }
@@ -463,7 +296,8 @@ int main()
                 }
                 if (countdown == 0)
                 {
-                    music.play();
+                    if (isBGM)
+                        music.play();
                     gameStarted = 1;
                 }
             }
@@ -473,8 +307,10 @@ int main()
                 for (int i = 0; i < 4; i++)
                 {
                     if (dx)
-                        movementSound.play();
-
+                    {
+                        if (isSFX)
+                            movementSound.play();
+                    }
                     tetra.block[i].x += dx;
                 }
                 if (!isValidPotision(tetra, boardStates))
@@ -483,7 +319,8 @@ int main()
                 // Rotation
                 if (rotate_cw)
                 {
-                    rotateSound.play();
+                    if (isSFX)
+                        rotateSound.play();
 
                     /*
                         Consider a clockwise rotation with angle T, original point (x,y), new point(x',y')
@@ -576,7 +413,8 @@ int main()
 
                 if (rotate_ccw)
                 {
-                    rotateSound.play();
+                    if (isSFX)
+                        rotateSound.play();
 
                     /*
                         Rotating 90deg counter-clockwise is basically rotating -90deg clockwise
@@ -666,7 +504,8 @@ int main()
                 // hard drop
                 if (hardDrop)
                 {
-                    hardDropSound.play();
+                    if (isSFX)
+                        hardDropSound.play();
 
                     // The tetromino is instantly slam to the ground
                     // We do that by moving it down vertically with no delay, until it hit the ground
@@ -687,7 +526,8 @@ int main()
                 // hold system
                 if (hold)
                 {
-                    holdSound.play();
+                    if (isSFX)
+                        holdSound.play();
 
                     if (heldTetromino == -1)
                     {
@@ -770,9 +610,11 @@ int main()
         // Game over
         if (isEnd(boardStates))
         {
-            sf::Text endText = TextSetup(font, 75, sf::Color::Red, "GAME OVER!");
-            endText.move(15, 250);
-            window.draw(endText);
+            // Draw the end
+            sf::Sprite endScreen;
+            endScreen.setTexture(endScreenTextures);
+            endScreen.move(146, 96);
+            window.draw(endScreen);
         }
         else
         {
@@ -806,9 +648,15 @@ int main()
             // Draw the paused
             if (!isPlaying)
             {
+                sf::Sprite pauseScreen;
+                pauseScreen.setTexture(pauseScreenTextures);
+                pauseScreen.move(146, 96);
                 window.draw(pauseScreen);
                 if (isHelp)
                 {
+                    sf::Sprite helpScreen;
+                    helpScreen.setTexture(helpScreenTextures);
+                    helpScreen.move(53, 134);
                     window.draw(helpScreen);
                 }
             }
