@@ -22,14 +22,13 @@
     - Render grid
     - Render hold section
     - Render pause and countdown
-    - Render game over (demo)
+    - Render game over 
 
     * "Audio"
     - Background music
     - Sound effects
 
     To-do:
-    - Complete "Graphics"
     - Factorize by file*
 
 */
@@ -48,13 +47,28 @@ int main()
 
     // Graphics setup
     sf::RenderWindow window(sf::VideoMode(550, 600), "Kurisu"); // Create a window
+    
+    // Get the texture ready
+    sf::Texture texture;
+    texture.loadFromFile("textures/Tetromino.png");
 
-    sf::Texture texture, backgroundTextures, pauseScreenTextures, helpScreenTextures, endScreenTextures;
-    texture.loadFromFile("textures/Tetromino.png"); // Get the texture ready
+    sf::Texture backgroundTextures;
     backgroundTextures.loadFromFile("textures/Background.jpg");
+
+    sf::Texture pauseScreenTextures;
     pauseScreenTextures.loadFromFile("textures/Pause.png");
+
+    sf::Texture helpScreenTextures;
     helpScreenTextures.loadFromFile("textures/Help.png");
+
+    sf::Texture endScreenTextures;
     endScreenTextures.loadFromFile("textures/GameOver.png");
+
+    sf::Texture musicButtonTextures;
+    musicButtonTextures.loadFromFile("textures/speaker.png");
+
+    sf::Texture soundEffectButtonTextures;
+    soundEffectButtonTextures.loadFromFile("textures/musicnote.png");
 
     const int BLOCK_SIZE = 25;
     sf::Sprite sprite, background;
@@ -267,6 +281,19 @@ int main()
                         }
                     }
                 }
+                else 
+                {
+                    if (isInside(mousePotision,point(375,200), point(425,250)))
+                    {
+                        isBGM ^= 1;
+                        if (isBGM) music.play();
+                        else music.pause();
+                    }
+                    if (isInside(mousePotision,point(440,200), point(490,250)))
+                    {
+                        isSFX ^= 1;
+                    }
+                }
                 break;
             }
 
@@ -282,6 +309,7 @@ int main()
             timer = 0;
         }
 
+        
         // While the game is playing...
         if (isPlaying)
         {
@@ -635,6 +663,20 @@ int main()
             sf::Text lineText = TextSetup(font, 25, sf::Color::Green, lineString);
             lineText.move(372, 470);
             window.draw(lineText);
+
+            // Draw the buttons
+
+            sf::Sprite musicButton;
+            musicButton.setTexture(musicButtonTextures);
+            musicButton.move(375,200);
+            if (!isBGM) musicButton.setColor(sf::Color::Red);
+            window.draw(musicButton);
+
+            sf::Sprite soundEffectButton;
+            soundEffectButton.setTexture(soundEffectButtonTextures);
+            soundEffectButton.move(440,200);
+            if (!isSFX) soundEffectButton.setColor(sf::Color::Red);
+            window.draw(soundEffectButton);
 
             // Draw the countdown
             if (countdown && isPlaying)
